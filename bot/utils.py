@@ -123,7 +123,7 @@ async def edit_message_with_retry(context: ContextTypes.DEFAULT_TYPE, chat_id: i
             parse_mode=constants.ParseMode.MARKDOWN if markdown else None,
         )
     except telegram.error.BadRequest as e:
-        if str(e).startswith("Message is not modified"):
+        if str(e).startswith("Xabar o'zgartirilmagan"):
             return
         try:
             await context.bot.edit_message_text(
@@ -133,7 +133,7 @@ async def edit_message_with_retry(context: ContextTypes.DEFAULT_TYPE, chat_id: i
                 text=text,
             )
         except Exception as e:
-            logging.warning(f'Failed to edit message: {str(e)}')
+            logging.warning(f'Xabarni tahrirlab bo‘lmadi: {str(e)}')
             raise e
 
     except Exception as e:
