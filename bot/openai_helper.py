@@ -30,11 +30,6 @@ O_MODELS = ("o1", "o1-mini", "o1-preview")
 GPT_ALL_MODELS = GPT_3_MODELS + GPT_3_16K_MODELS + GPT_4_MODELS + GPT_4_32K_MODELS + GPT_4_VISION_MODELS + GPT_4_128K_MODELS + GPT_4O_MODELS + O_MODELS
 
 def default_max_tokens(model: str) -> int:
-    """
-    Gets the default number of max tokens for the given model.
-    :param model: The model name
-    :return: The default number of max tokens
-    """
     base = 1200
     if model in GPT_3_MODELS:
         return base
@@ -57,9 +52,6 @@ def default_max_tokens(model: str) -> int:
 
 
 def are_functions_available(model: str) -> bool:
-    """
-    Whether the given model supports functions
-    """
     if model in ("gpt-3.5-turbo-0301", "gpt-4-0314", "gpt-4-32k-0314", "gpt-3.5-turbo-0613", "gpt-3.5-turbo-16k-0613"):
         return False
     if model in O_MODELS:
@@ -74,11 +66,7 @@ with open(translations_file_path, 'r', encoding='utf-8') as f:
     translations = json.load(f)
 
 
-def localized_text(key, bot_language):
-    """
-    Return translated text for a key in specified bot_language.
-    Keys and translations can be found in the translations.json.
-    """
+def localized_text(key, bot_language):  
     try:
         return translations[bot_language][key]
     except KeyError:
