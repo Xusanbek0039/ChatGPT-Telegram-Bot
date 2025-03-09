@@ -81,10 +81,6 @@ def localized_text(key, bot_language):
 
 
 class OpenAIHelper:
-    """
-    ChatGPT helper class.
-    """
-
     def __init__(self, config: dict, plugin_manager: PluginManager):
         """
         Initializes the OpenAI helper class with the given configuration.
