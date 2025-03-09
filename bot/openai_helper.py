@@ -352,7 +352,6 @@ class OpenAIHelper:
                         break
                 self.__add_to_history(chat_id, role="user", content=query)
 
-            # Summarize the chat history if it's too long to avoid excessive token usage
             token_count = self.__count_tokens(self.conversations[chat_id])
             exceeded_max_tokens = token_count + self.config['max_tokens'] > self.__max_model_tokens()
             exceeded_max_history_size = len(self.conversations[chat_id]) > self.config['max_history_size']
@@ -385,14 +384,6 @@ class OpenAIHelper:
             }
 
 
-            # vision model does not yet support functions
-
-            # if self.config['enable_functions']:
-            #     functions = self.plugin_manager.get_functions_specs()
-            #     if len(functions) > 0:
-            #         common_args['functions'] = self.plugin_manager.get_functions_specs()
-            #         common_args['function_call'] = 'auto'
-            
             return await self.client.chat.completions.create(**common_args)
 
         except openai.RateLimitError as e:
@@ -419,12 +410,6 @@ class OpenAIHelper:
 
         
 
-        # functions are not available for this model
-        
-        # if self.config['enable_functions']:
-        #     response, plugins_used = await self.__handle_function_call(chat_id, response)
-        #     if is_direct_result(response):
-        #         return response, '0'
 
         answer = ''
 
@@ -441,25 +426,17 @@ class OpenAIHelper:
             self.__add_to_history(chat_id, role="assistant", content=answer)
 
         bot_language = self.config['bot_language']
-        # Plugins are not enabled either
-        # show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
-        # plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
+
         if self.config['show_usage']:
             answer += "\n\n---\n" \
                       f"💰 {str(response.usage.total_tokens)} {localized_text('stats_tokens', bot_language)}" \
                       f" ({str(response.usage.prompt_tokens)} {localized_text('prompt', bot_language)}," \
                       f" {str(response.usage.completion_tokens)} {localized_text('completion', bot_language)})"
-            # if show_plugins_used:
-            #     answer += f"\n🔌 {', '.join(plugin_names)}"
-        # elif show_plugins_used:
-        #     answer += f"\n\n---\n🔌 {', '.join(plugin_names)}"
 
         return answer, response.usage.total_tokens
 
     async def interpret_image_stream(self, chat_id, fileobj, prompt=None):
-        """
-        Interprets a given PNG image file using the Vision model.
-        """
+
         image = encode_image(fileobj)
         prompt = self.config['vision_prompt'] if prompt is None else prompt
 
@@ -470,11 +447,6 @@ class OpenAIHelper:
 
         
 
-        # if self.config['enable_functions']:
-        #     response, plugins_used = await self.__handle_function_call(chat_id, response, stream=True)
-        #     if is_direct_result(response):
-        #         yield response, '0'
-        #         return
 
         answer = ''
         async for chunk in response:
@@ -488,32 +460,20 @@ class OpenAIHelper:
         self.__add_to_history(chat_id, role="assistant", content=answer)
         tokens_used = str(self.__count_tokens(self.conversations[chat_id]))
 
-        #show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
-        #plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
+
         if self.config['show_usage']:
             answer += f"\n\n---\n💰 {tokens_used} {localized_text('stats_tokens', self.config['bot_language'])}"
-        #     if show_plugins_used:
-        #         answer += f"\n🔌 {', '.join(plugin_names)}"
-        # elif show_plugins_used:
-        #     answer += f"\n\n---\n🔌 {', '.join(plugin_names)}"
 
         yield answer, tokens_used
 
     def reset_chat_history(self, chat_id, content=''):
-        """
-        Resets the conversation history.
-        """
         if content == '':
             content = self.config['assistant_prompt']
         self.conversations[chat_id] = [{"role": "assistant" if self.config['model'] in O_MODELS else "system", "content": content}]
         self.conversations_vision[chat_id] = False
 
     def __max_age_reached(self, chat_id) -> bool:
-        """
-        Checks if the maximum conversation age has been reached.
-        :param chat_id: The chat ID
-        :return: A boolean indicating whether the maximum conversation age has been reached
-        """
+
         if chat_id not in self.last_updated:
             return False
         last_updated = self.last_updated[chat_id]
@@ -522,26 +482,15 @@ class OpenAIHelper:
         return last_updated < now - datetime.timedelta(minutes=max_age_minutes)
 
     def __add_function_call_to_history(self, chat_id, function_name, content):
-        """
-        Adds a function call to the conversation history
-        """
+
         self.conversations[chat_id].append({"role": "function", "name": function_name, "content": content})
 
     def __add_to_history(self, chat_id, role, content):
-        """
-        Adds a message to the conversation history.
-        :param chat_id: The chat ID
-        :param role: The role of the message sender
-        :param content: The message content
-        """
+
         self.conversations[chat_id].append({"role": role, "content": content})
 
     async def __summarise(self, conversation) -> str:
-        """
-        Summarises the conversation history.
-        :param conversation: The conversation history
-        :return: The summary
-        """
+
         messages = [
             {"role": "assistant", "content": "Summarize this conversation in 700 characters or less"},
             {"role": "user", "content": str(conversation)}
@@ -570,7 +519,6 @@ class OpenAIHelper:
         if self.config['model'] in GPT_4O_MODELS:
             return base * 31
         elif self.config['model'] in O_MODELS:
-            # https://platform.openai.com/docs/models#o1
             if self.config['model'] == "o1":
                 return 100_000
             elif self.config['model'] == "o1-preview":
@@ -582,11 +530,7 @@ class OpenAIHelper:
         )
 
     def __count_tokens(self, messages) -> int:
-        """
-        Counts the number of tokens required to send the given messages.
-        :param messages: the messages to send
-        :return: the number of tokens required
-        """
+
         model = self.config['model']
         try:
             encoding = tiktoken.encoding_for_model(model)
@@ -616,17 +560,13 @@ class OpenAIHelper:
                     num_tokens += len(encoding.encode(value))
                     if key == "name":
                         num_tokens += tokens_per_name
-        num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+        num_tokens += 3  
         return num_tokens
 
     # no longer needed
 
     def __count_tokens_vision(self, image_bytes: bytes) -> int:
-        """
-        Counts the number of tokens for interpreting an image.
-        :param image_bytes: image to interpret
-        :return: the number of tokens required
-        """
+
         image_file = io.BytesIO(image_bytes)
         image = Image.open(image_file)
         model = self.config['vision_model']
@@ -635,7 +575,6 @@ class OpenAIHelper:
         
         w, h = image.size
         if w > h: w, h = h, w
-        # this computation follows https://platform.openai.com/docs/guides/vision and https://openai.com/pricing#gpt-4-turbo
         base_tokens = 85
         detail = self.config['vision_detail']
         if detail == 'low':
@@ -651,25 +590,3 @@ class OpenAIHelper:
         else:
             raise NotImplementedError(f"""unknown parameter detail={detail} for model {model}.""")
 
-    # No longer works as of July 21st 2023, as OpenAI has removed the billing API
-    # def get_billing_current_month(self):
-    #     """Gets billed usage for current month from OpenAI API.
-    #
-    #     :return: dollar amount of usage this month
-    #     """
-    #     headers = {
-    #         "Authorization": f"Bearer {openai.api_key}"
-    #     }
-    #     # calculate first and last day of current month
-    #     today = date.today()
-    #     first_day = date(today.year, today.month, 1)
-    #     _, last_day_of_month = monthrange(today.year, today.month)
-    #     last_day = date(today.year, today.month, last_day_of_month)
-    #     params = {
-    #         "start_date": first_day,
-    #         "end_date": last_day
-    #     }
-    #     response = requests.get("https://api.openai.com/dashboard/billing/usage", headers=headers, params=params)
-    #     billing_data = json.loads(response.text)
-    #     usage_month = billing_data["total_usage"] / 100  # convert cent amount to dollars
-    #     return usage_month
