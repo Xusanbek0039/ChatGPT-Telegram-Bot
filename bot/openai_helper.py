@@ -91,11 +91,6 @@ class OpenAIHelper:
         self.last_updated: dict[int: datetime] = {}  # {chat_id: last_update_timestamp}
 
     def get_conversation_stats(self, chat_id: int) -> tuple[int, int]:
-        """
-        Gets the number of messages and tokens used in the conversation.
-        :param chat_id: The chat ID
-        :return: A tuple containing the number of messages and tokens used
-        """
         if chat_id not in self.conversations:
             self.reset_chat_history(chat_id)
         return len(self.conversations[chat_id]), self.__count_tokens(self.conversations[chat_id])
