@@ -82,11 +82,6 @@ def localized_text(key, bot_language):
 
 class OpenAIHelper:
     def __init__(self, config: dict, plugin_manager: PluginManager):
-        """
-        Initializes the OpenAI helper class with the given configuration.
-        :param config: A dictionary containing the GPT configuration
-        :param plugin_manager: The plugin manager
-        """
         http_client = httpx.AsyncClient(proxy=config['proxy']) if 'proxy' in config else None
         self.client = openai.AsyncOpenAI(api_key=config['api_key'], http_client=http_client)
         self.config = config
