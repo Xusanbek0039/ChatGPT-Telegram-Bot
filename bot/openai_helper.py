@@ -170,13 +170,7 @@ class OpenAIHelper:
         wait=wait_fixed(20),
         stop=stop_after_attempt(3)
     )
-    async def __common_get_chat_response(self, chat_id: int, query: str, stream=False):
-        """
-        Request a response from the GPT model.
-        :param chat_id: The chat ID
-        :param query: The query to send to the model
-        :return: The answer from the model and the number of tokens used
-        """
+    async def __common_get_chat_response(self, chat_id: int, query: str, stream=False): 
         bot_language = self.config['bot_language']
         try:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):
@@ -285,11 +279,6 @@ class OpenAIHelper:
         return await self.__handle_function_call(chat_id, response, stream, times + 1, plugins_used)
 
     async def generate_image(self, prompt: str) -> tuple[str, str]:
-        """
-        Generates an image from the given prompt using DALL·E model.
-        :param prompt: The prompt to send to the model
-        :return: The image URL and the image size
-        """
         bot_language = self.config['bot_language']
         try:
             response = await self.client.images.generate(
@@ -313,11 +302,6 @@ class OpenAIHelper:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
     async def generate_speech(self, text: str) -> tuple[any, int]:
-        """
-        Generates an audio from the given text using TTS model.
-        :param prompt: The text to send to the model
-        :return: The audio in bytes and the text size
-        """
         bot_language = self.config['bot_language']
         try:
             response = await self.client.audio.speech.create(
@@ -335,9 +319,6 @@ class OpenAIHelper:
             raise Exception(f"⚠️ _{localized_text('error', bot_language)}._ ⚠️\n{str(e)}") from e
 
     async def transcribe(self, filename):
-        """
-        Transcribes the audio file using the Whisper model.
-        """
         try:
             with open(filename, "rb") as audio:
                 prompt_text = self.config['whisper_prompt']
@@ -354,12 +335,6 @@ class OpenAIHelper:
         stop=stop_after_attempt(3)
     )
     async def __common_get_chat_response_vision(self, chat_id: int, content: list, stream=False):
-        """
-        Request a response from the GPT model.
-        :param chat_id: The chat ID
-        :param query: The query to send to the model
-        :return: The answer from the model and the number of tokens used
-        """
         bot_language = self.config['bot_language']
         try:
             if chat_id not in self.conversations or self.__max_age_reached(chat_id):
