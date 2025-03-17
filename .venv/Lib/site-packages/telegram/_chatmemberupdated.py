@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # A library that provides a Python interface to the Telegram Bot API
-# Copyright (C) 2015-2024
+# Copyright (C) 2015-2025
 # Leandro Toledo de Souza <devs@python-telegram-bot.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Lesser Public License
 # along with this program.  If not, see [http://www.gnu.org/licenses/].
 """This module contains an object that represents a Telegram ChatMemberUpdated."""
-import datetime
+import datetime as dtm
 from typing import TYPE_CHECKING, Optional, Union
 
 from telegram._chat import Chat
@@ -25,6 +25,7 @@ from telegram._chatinvitelink import ChatInviteLink
 from telegram._chatmember import ChatMember
 from telegram._telegramobject import TelegramObject
 from telegram._user import User
+from telegram._utils.argumentparsing import de_json_optional
 from telegram._utils.datetime import extract_tzinfo_from_defaults, from_timestamp
 from telegram._utils.types import JSONDict
 
@@ -108,7 +109,7 @@ class ChatMemberUpdated(TelegramObject):
         self,
         chat: Chat,
         from_user: User,
-        date: datetime.datetime,
+        date: dtm.datetime,
         old_chat_member: ChatMember,
         new_chat_member: ChatMember,
         invite_link: Optional[ChatInviteLink] = None,
@@ -121,7 +122,7 @@ class ChatMemberUpdated(TelegramObject):
         # Required
         self.chat: Chat = chat
         self.from_user: User = from_user
-        self.date: datetime.datetime = date
+        self.date: dtm.datetime = date
         self.old_chat_member: ChatMember = old_chat_member
         self.new_chat_member: ChatMember = new_chat_member
         self.via_chat_folder_invite_link: Optional[bool] = via_chat_folder_invite_link
@@ -141,24 +142,19 @@ class ChatMemberUpdated(TelegramObject):
         self._freeze()
 
     @classmethod
-    def de_json(
-        cls, data: Optional[JSONDict], bot: Optional["Bot"] = None
-    ) -> Optional["ChatMemberUpdated"]:
+    def de_json(cls, data: JSONDict, bot: Optional["Bot"] = None) -> "ChatMemberUpdated":
         """See :meth:`telegram.TelegramObject.de_json`."""
         data = cls._parse_data(data)
-
-        if not data:
-            return None
 
         # Get the local timezone from the bot if it has defaults
         loc_tzinfo = extract_tzinfo_from_defaults(bot)
 
-        data["chat"] = Chat.de_json(data.get("chat"), bot)
-        data["from_user"] = User.de_json(data.pop("from", None), bot)
+        data["chat"] = de_json_optional(data.get("chat"), Chat, bot)
+        data["from_user"] = de_json_optional(data.pop("from", None), User, bot)
         data["date"] = from_timestamp(data.get("date"), tzinfo=loc_tzinfo)
-        data["old_chat_member"] = ChatMember.de_json(data.get("old_chat_member"), bot)
-        data["new_chat_member"] = ChatMember.de_json(data.get("new_chat_member"), bot)
-        data["invite_link"] = ChatInviteLink.de_json(data.get("invite_link"), bot)
+        data["old_chat_member"] = de_json_optional(data.get("old_chat_member"), ChatMember, bot)
+        data["new_chat_member"] = de_json_optional(data.get("new_chat_member"), ChatMember, bot)
+        data["invite_link"] = de_json_optional(data.get("invite_link"), ChatInviteLink, bot)
 
         return super().de_json(data=data, bot=bot)
 
@@ -179,9 +175,7 @@ class ChatMemberUpdated(TelegramObject):
         self,
     ) -> dict[
         str,
-        tuple[
-            Union[str, bool, datetime.datetime, User], Union[str, bool, datetime.datetime, User]
-        ],
+        tuple[Union[str, bool, dtm.datetime, User], Union[str, bool, dtm.datetime, User]],
     ]:
         """Computes the difference between :attr:`old_chat_member` and :attr:`new_chat_member`.
 
