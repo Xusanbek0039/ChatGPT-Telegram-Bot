@@ -786,7 +786,7 @@
     "uz": {
         "help_description": "💁 Yordam xabarini ko'rsatish",
         "reset_description": "♻️ Suhbatni qayta boshlang. Agar xohlasangiz, umumiy ko'rsatmalar bering (masalan, /reset siz foydali yordamchisiz)",
-        "image_description": "📷 Tasvirn yaratish (masalan, /image mushukrasmini chiz)",
+        "image_description": "📷 Tasvirni yaratish (masalan, /image mushuk rasmini chizib ber)",
         "tts_description": "📝 Matnni ovozga aylantirish (masalan, /tts salom)",
         "stats_description": "📊 Hozirgi foydalanilgan statistikani olish",
         "resend_description": "💫 Oxirgi xabarni qayta yuborish",
