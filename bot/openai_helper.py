@@ -156,7 +156,7 @@ class OpenAIHelper:
         show_plugins_used = len(plugins_used) > 0 and self.config['show_plugins_used']
         plugin_names = tuple(self.plugin_manager.get_plugin_source_name(plugin) for plugin in plugins_used)
         if self.config['show_usage']:
-            answer += f"\n\n---\n💰 {tokens_used} {localized_text('stats_tokens', self.config['bot_language'])}"
+            answer += f"\n\n--------\nUshbu xabar yozishda {tokens_used} {localized_text('stats_tokens', self.config['bot_language'])}"
             if show_plugins_used:
                 answer += f"\n🔌 {', '.join(plugin_names)}"
         elif show_plugins_used:

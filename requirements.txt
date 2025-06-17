@@ -9,3 +9,6 @@ spotipy~=2.24.0
 pytube~=15.0.0
 gtts~=2.5.4
 whois~=0.9.27
+pillow
+python-telegram-bot==21.9
+tiktoken

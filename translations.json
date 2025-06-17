@@ -797,7 +797,7 @@
         "stats_conversation": ["👁 Hozirgi suhbat", "tarixdagi chat xabarlari", "tarixdagi suhbat tokenlari"],
         "usage_today": "📈 Bugungi foydalanish",
         "usage_month": "📈 Bu oydagi foydalanish",
-        "stats_tokens": "tokenlar",
+        "stats_tokens": "belgidan foydalanildi!",
         "stats_images": "yaratilgan tasvirlar📸",
         "stats_vision":"📸Tasvir belgilari tarjima qilindi",
         "stats_tts": "ovozga aylangan belgilar🎙",
