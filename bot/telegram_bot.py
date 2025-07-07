@@ -25,10 +25,16 @@ from usage_tracker import UsageTracker
 
 
 class ChatGPTTelegramBot:
-
+    """
+    Class representing a ChatGPT Telegram Bot.
+    """
 
     def __init__(self, config: dict, openai: OpenAIHelper):
-
+        """
+        Initializes the bot with the given configuration and GPT bot object.
+        :param config: A dictionary containing the bot configuration
+        :param openai: OpenAIHelper object
+        """
         self.config = config
         self.openai = openai
         bot_language = self.config['bot_language']
@@ -55,7 +61,9 @@ class ChatGPTTelegramBot:
         self.inline_queries_cache = {}
 
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
-
+        """
+        Shows the help menu.
+        """
         commands = self.group_commands if is_group_chat(update) else self.commands
         commands_description = [f'/{command.command} - {command.description}' for command in commands]
         bot_language = self.config['bot_language']
@@ -71,14 +79,17 @@ class ChatGPTTelegramBot:
         await update.message.reply_text(help_text, disable_web_page_preview=True)
 
     async def stats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Returns token usage statistics for current day and month.
+        """
         if not await is_allowed(self.config, update, context):
-            logging.warning(f'Foydalanuvchi {update.message.from_user.name} (🆔: {update.message.from_user.id}) '
-                            'ulardan foydalanish statistikasini so\'rashga ruxsat berilmaydi')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                            'is not allowed to request their usage statistics')
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'Foydalanuvchi {update.message.from_user.name} (🆔: {update.message.from_user.id}) '
-                     'foydalanish statistikasini so\'radi')
+        logging.info(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                     'requested their usage statistics')
 
         user_id = update.message.from_user.id
         if user_id not in self.usage:
@@ -162,6 +173,14 @@ class ChatGPTTelegramBot:
                 f"{localized_text(budget_period, bot_language)}: "
                 f"${remaining_budget:.2f}.\n"
             )
+        # No longer works as of July 21st 2023, as OpenAI has removed the billing API
+        # add OpenAI account information for admin request
+        # if is_admin(self.config, user_id):
+        #     text_budget += (
+        #         f"{localized_text('stats_openai', bot_language)}"
+        #         f"{self.openai.get_billing_current_month():.2f}"
+        #     )
+
         usage_text = text_current_conversation + text_today + text_month + text_budget
         await update.message.reply_text(usage_text, parse_mode=constants.ParseMode.MARKDOWN)
 
@@ -170,15 +189,15 @@ class ChatGPTTelegramBot:
         Resend the last request
         """
         if not await is_allowed(self.config, update, context):
-            logging.warning(f'Foydalanuvchi {update.message.from_user.name}  (🆔: {update.message.from_user.id})'
-                            ' xabarni qayta yuborishga ruxsat berilmaydi')
+            logging.warning(f'User {update.message.from_user.name}  (id: {update.message.from_user.id})'
+                            ' is not allowed to resend the message')
             await self.send_disallowed_message(update, context)
             return
 
         chat_id = update.effective_chat.id
         if chat_id not in self.last_message:
-            logging.warning(f'Foydalanuvchi {update.message.from_user.name} (🆔: {update.message.from_user.id})'
-                            ' qayta yuborish uchun hech narsa yo\'q')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id})'
+                            ' does not have anything to resend')
             await update.effective_message.reply_text(
                 message_thread_id=get_thread_id(update),
                 text=localized_text('resend_failed', self.config['bot_language'])
@@ -186,8 +205,8 @@ class ChatGPTTelegramBot:
             return
 
         # Update message text, clear self.last_message and send the request to prompt
-        logging.info(f'Foydalanuvchidan oxirgi soʻrov qayta yuborilmoqda: {update.message.from_user.name} '
-                     f'(🆔: {update.message.from_user.id})')
+        logging.info(f'Resending the last prompt from user: {update.message.from_user.name} '
+                     f'(id: {update.message.from_user.id})')
         with update.message._unfrozen() as message:
             message.text = self.last_message.pop(chat_id)
 
@@ -198,13 +217,13 @@ class ChatGPTTelegramBot:
         Resets the conversation.
         """
         if not await is_allowed(self.config, update, context):
-            logging.warning(f'Foydalanuvchi {update.message.from_user.name} (🆔: {update.message.from_user.id}) '
-                            'suhbatni qayta tiklashga ruxsat berilmaydi')
+            logging.warning(f'User {update.message.from_user.name} (id: {update.message.from_user.id}) '
+                            'is not allowed to reset the conversation')
             await self.send_disallowed_message(update, context)
             return
 
-        logging.info(f'{update.message.from_user.name}-foydalanuvchi uchun suhbatni tiklash'
-                     f'(🆔: {update.message.from_user.id})...')
+        logging.info(f'Resetting the conversation for user {update.message.from_user.name} '
+                     f'(id: {update.message.from_user.id})...')
 
         chat_id = update.effective_chat.id
         reset_content = message_text(update.message)
@@ -230,8 +249,8 @@ class ChatGPTTelegramBot:
             )
             return
 
-        logging.info(f"{update.message.from_user.name} foydalanuvchidan yangi rasm yaratish soʻrovi olindi"
-                     f'(🆔: {update.message.from_user.id})')
+        logging.info(f'New image generation request received from user {update.message.from_user.name} '
+                     f'(id: {update.message.from_user.id})')
 
         async def _generate():
             try:
@@ -247,7 +266,7 @@ class ChatGPTTelegramBot:
                         document=image_url
                     )
                 else:
-                    raise Exception(f"env o'zgaruvchisi IMAGE_RECEIVE_MODE qiymati noto'g'ri {self.config['image_receive_mode']}")
+                    raise Exception(f"env variable IMAGE_RECEIVE_MODE has invalid value {self.config['image_receive_mode']}")
                 # add image request to users usage tracker
                 user_id = update.message.from_user.id
                 self.usage[user_id].add_image_request(image_size, self.config['image_prices'])
@@ -267,6 +286,9 @@ class ChatGPTTelegramBot:
         await wrap_with_indicator(update, context, _generate, constants.ChatAction.UPLOAD_PHOTO)
 
     async def tts(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Generates an speech for the given input using TTS APIs
+        """
         if not self.config['enable_tts_generation'] \
                 or not await self.check_allowed_and_within_budget(update, context):
             return
@@ -279,8 +301,8 @@ class ChatGPTTelegramBot:
             )
             return
 
-        logging.info(f'{update.message.from_user.name}-foydalanuvchidan yangi nutq yaratish soʻrovi olindi '
-                     f'(🆔: {update.message.from_user.id})')
+        logging.info(f'New speech generation request received from user {update.message.from_user.name} '
+                     f'(id: {update.message.from_user.id})')
 
         async def _generate():
             try:
@@ -311,13 +333,13 @@ class ChatGPTTelegramBot:
 
     async def transcribe(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
-        Transcribe audio xabar.
+        Transcribe audio messages.
         """
         if not self.config['enable_transcription'] or not await self.check_allowed_and_within_budget(update, context):
             return
 
         if is_group_chat(update) and self.config['ignore_group_transcriptions']:
-            logging.info('Transkripsiya guruh chatidan keladi, eʼtiborga olinmaydi...')
+            logging.info('Transcription coming from group chat, ignoring...')
             return
 
         chat_id = update.effective_chat.id
@@ -345,8 +367,8 @@ class ChatGPTTelegramBot:
             try:
                 audio_track = AudioSegment.from_file(filename)
                 audio_track.export(filename_mp3, format="mp3")
-                logging.info(f'Foydalanuvchidan yangi transkripsiya so‘rovi olindi {update.message.from_user.name} '
-                             f'(🆔: {update.message.from_user.id})')
+                logging.info(f'New transcribe request received from user {update.message.from_user.name} '
+                             f'(id: {update.message.from_user.id})')
 
             except Exception as e:
                 logging.exception(e)
@@ -430,6 +452,9 @@ class ChatGPTTelegramBot:
         await wrap_with_indicator(update, context, _execute, constants.ChatAction.TYPING)
 
     async def vision(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Interpret image using vision model.
+        """
         if not self.config['enable_vision'] or not await self.check_allowed_and_within_budget(update, context):
             return
 
@@ -438,13 +463,13 @@ class ChatGPTTelegramBot:
 
         if is_group_chat(update):
             if self.config['ignore_group_vision']:
-                logging.info('Guruh suhbatidan kelib chiqadigan ko\'rish, e\'tibor bermay...')
+                logging.info('Vision coming from group chat, ignoring...')
                 return
             else:
                 trigger_keyword = self.config['group_trigger_keyword']
                 if (prompt is None and trigger_keyword != '') or \
                    (prompt is not None and not prompt.lower().startswith(trigger_keyword.lower())):
-                    logging.info('Guruh suhbatidan noto\'g\'ri kalit so\'z bilan kelgan ko\'rish, e\'tiborsiz qoldirildi...')
+                    logging.info('Vision coming from group chat with wrong keyword, ignoring...')
                     return
         
         image = update.message.effective_attachment[-1]
@@ -476,8 +501,8 @@ class ChatGPTTelegramBot:
                 original_image = Image.open(temp_file)
                 
                 original_image.save(temp_file_png, format='PNG')
-                logging.info(f'{update.message.from_user.name}-Foydalanuvchidan yangi ko\'rish so\'rovi olindi'
-                             f'(🆔: {update.message.from_user.id})')
+                logging.info(f'New vision request received from user {update.message.from_user.name} '
+                             f'(id: {update.message.from_user.id})')
 
             except Exception as e:
                 logging.exception(e)
@@ -629,7 +654,7 @@ class ChatGPTTelegramBot:
             return
 
         logging.info(
-            f'{update.message.from_user.name}-foydalanuvchidan yangi xabar qabul qilindi (🆔: {update.message.from_user.id})')
+            f'New message received from user {update.message.from_user.name} (id: {update.message.from_user.id})')
         chat_id = update.effective_chat.id
         user_id = update.message.from_user.id
         prompt = message_text(update.message)
@@ -648,9 +673,9 @@ class ChatGPTTelegramBot:
                     prompt = f'"{update.message.reply_to_message.text}" {prompt}'
             else:
                 if update.message.reply_to_message and update.message.reply_to_message.from_user.id == context.bot.id:
-                    logging.info('Xabar - bu botga javob boʻlib,...')
+                    logging.info('Message is a reply to the bot, allowing...')
                 else:
-                    logging.warning('Xabar trigger kalit so\'zi bilan boshlanmaydi, e\'tiborsiz qoldiriladi...')
+                    logging.warning('Message does not start with trigger keyword, ignoring...')
                     return
 
         try:
@@ -824,7 +849,7 @@ class ChatGPTTelegramBot:
 
             await update.inline_query.answer([inline_query_result], cache_time=0)
         except Exception as e:
-            logging.error(f'Inline so‘rov uchun natija kartasini yaratishda xatolik yuz berdi {e}')
+            logging.error(f'An error occurred while generating the result card for inline query {e}')
 
     async def handle_callback_inline_query(self, update: Update, context: CallbackContext):
         """
@@ -928,7 +953,7 @@ class ChatGPTTelegramBot:
                                                             text=f'{query}\n\n_{answer_tr}:_\n{loading_tr}',
                                                             parse_mode=constants.ParseMode.MARKDOWN)
 
-                        logging.info(f'Inline so\'rov uchun javob yaratilmoqda {name}')
+                        logging.info(f'Generating response for inline query by {name}')
                         response, total_tokens = await self.openai.get_chat_response(chat_id=user_id, query=query)
 
                         if is_direct_result(response):
@@ -964,21 +989,21 @@ class ChatGPTTelegramBot:
     async def check_allowed_and_within_budget(self, update: Update, context: ContextTypes.DEFAULT_TYPE,
                                               is_inline=False) -> bool:
         """
-        Foydalanuvchiga botdan foydalanishga ruxsat berilganligini va ular o'z byudjeti doirasida ekanligini tekshiradi
-        :param update: Telegram yangilash obyekti
-        :param konteksti: Telegram kontekst obyekti
-        :param is_inline: Inline so'rovlar uchun mantiqiy bayroq
-        :qaytish: Boolean foydalanuvchiga botdan foydalanishga ruxsat berilganligini bildiradi
+        Checks if the user is allowed to use the bot and if they are within their budget
+        :param update: Telegram update object
+        :param context: Telegram context object
+        :param is_inline: Boolean flag for inline queries
+        :return: Boolean indicating if the user is allowed to use the bot
         """
         name = update.inline_query.from_user.name if is_inline else update.message.from_user.name
         user_id = update.inline_query.from_user.id if is_inline else update.message.from_user.id
 
         if not await is_allowed(self.config, update, context, is_inline=is_inline):
-            logging.warning(f'Foydalanuvchi {name} (🆔: {user_id}) botdan foydalanishga ruxsat berilmagan')
+            logging.warning(f'User {name} (id: {user_id}) is not allowed to use the bot')
             await self.send_disallowed_message(update, context, is_inline)
             return False
         if not is_within_budget(self.config, self.usage, update, is_inline=is_inline):
-            logging.warning(f'Foydalanuvchi {name} (🆔: {user_id}) limit foydalanish chegarasiga yetdi')
+            logging.warning(f'User {name} (id: {user_id}) reached their usage limit')
             await self.send_budget_reached_message(update, context, is_inline)
             return False
 
